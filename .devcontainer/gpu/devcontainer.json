@@ -1,0 +1,15 @@
+{
+  "name": "Kaggle Harness (NVIDIA GPU)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "../.."
+  },
+  "runArgs": ["--gpus", "all"],
+  "remoteUser": "root",
+  "updateRemoteUserUID": false,
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-python.vscode-pylance"]
+    }
+  }
+}

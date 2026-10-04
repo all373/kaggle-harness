@@ -1,0 +1,7 @@
+{
+  "competition": "__SLUG__",
+  "device": "auto",
+  "seed": 42,
+  "data_dir": "data/__SLUG__",
+  "output_dir": "runs/__SLUG__"
+}

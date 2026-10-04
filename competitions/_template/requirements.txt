@@ -1,0 +1,2 @@
+# Add and pin competition-specific dependencies here.
+# The GPU container already includes PyTorch; avoid replacing it unintentionally.
