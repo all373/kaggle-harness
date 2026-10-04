@@ -18,10 +18,11 @@ def main() -> None:
     target = ROOT / "competitions" / args.slug
     if target.exists():
         parser.error(f"directory already exists: {target}")
-    shutil.copytree(ROOT / "competitions" / "_template", target)
-    for name in ("README.md", "config.json"):
-        path = target / name
-        path.write_text(path.read_text().replace("__SLUG__", args.slug))
+    shutil.copytree(ROOT / "competitions" / "_template", target,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*Zone.Identifier*"))
+    for path in target.rglob("*"):
+        if path.is_file() and path.suffix in {".md", ".json", ".py", ".txt"}:
+            path.write_text(path.read_text().replace("__SLUG__", args.slug))
     print(f"Created {target.relative_to(ROOT)}")
 
 
