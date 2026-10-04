@@ -25,5 +25,6 @@ checkpoints/
 *.7z
 **/kaggle.json
 **/access_token
+/config/*.local.json
 .aws/
 .ssh/
