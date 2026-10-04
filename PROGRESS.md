@@ -11,7 +11,7 @@ WSL containers の Dev Container を使い、単一リポジトリで Kaggle の
 その他のコンペは個人情報を含むため、ローカルに保持して Git の追跡から外す。
 共通の環境・ツール・テンプレート・手順を共有し、個別コンペを強制追加しない。
 以前のコミットはすでに origin/main に反映されていることを確認した。
-今回の除外は過去履歴からの削除ではない。共有済み履歴の書き換えは行っていない。
+追跡除外に続き、ユーザーの明示依頼で個別コンペを全 Git 履歴から削除した。
 
 ## 確認済み（2026-10-04）
 
@@ -19,7 +19,7 @@ WSL containers の Dev Container を使い、単一リポジトリで Kaggle の
 - `scripts/new_competition.py` でコンペのディレクトリを作成できる。
 - データ・モデル・認証情報を `.gitignore` で除外済み。
 - `origin` は `https://github.com/all373/kaggle-harness.git`。
-- 環境構築時点の `main` / `origin/main` は `5a837a8`。
+- 環境構築時点の `main` / `origin/main` は `d7552f5`。
   最新の共有状態は `git log` / `git status -sb` で確認する。
 - GPU コンテナで `python scripts/check_env.py --require-cuda` が成功。
   Python 3.11.10 / PyTorch 2.5.1+cu124 / NVIDIA GeForce RTX 3060 Ti。
@@ -124,12 +124,12 @@ ARC 用テスト5件が成功。認証情報・配布データ・成果物は Gi
 
 | 機能 | コミット |
 | --- | --- |
-| CPU / GPU Dev Container の Codex 拡張 | `bd70775` |
-| Git 除外の Kaggle 認証設定・共通 CLI | `bf9c393` |
-| NLP の GPU 学習・検証・提出 | `a924f6c` |
-| ARC の solver・Notebook バージョン指定提出 | `34e01d5` |
-| 自作コード・設定の切替と実験別保存・Notebook 生成 | `6e173db` |
-| 環境構築・自作実験・新コンペの手順書 | `03bc843` |
+| CPU / GPU Dev Container の Codex 拡張 | `65a9b26` |
+| Git 除外の Kaggle 認証設定・共通 CLI | `4e22f4a` |
+| NLP の GPU 学習・検証・提出 | `4e2ef69` |
+| ARC の solver・Notebook バージョン指定提出 | `29374d5` |
+| 自作コード・設定の切替と実験別保存・Notebook 生成 | `8174ac5` |
+| 環境構築・自作実験・新コンペの手順書 | `b7efdce` |
 | エージェント向け案内・再開メモ | この記録を含むコミット |
 
 共有前にテスト12件・差分の空白検査・Notebook に保存出力がないことを確認。
@@ -137,6 +137,15 @@ ARC 用テスト5件が成功。認証情報・配布データ・成果物は Gi
 
 `git push origin main` は GitHub の `Invalid username or token` で失敗。
 このコンテナには有効な GitHub CLI / 環境変数 / SSH 認証も見つからなかった。
-リモート main は `5a837a8` のままで、ローカル main が7コミット先行している。
+リモート main は `d7552f5` のままで、ローカル main が7コミット先行している。
 GitHub の Git 認証を更新したあと、`git push origin main` で共有を完了できる。
 Kaggle の認証とは別なので、Kaggle トークンを GitHub 認証に使わない。
+
+## 個別コンペの履歴削除（2026-10-04）
+
+ユーザーの依頼により git-filter-repo で全履歴から `competitions/_template/` 以外を削除。
+書き換え後の全10コミットで対象ファイルがないことと、現在の共有ファイルが同一であることを検査した。
+個別コンペ20ファイルはローカルに保持し、Git 除外を継続する。
+GitHub main は変更前の先端を指定した force-with-lease で更新する。
+別の clone がある場合は旧履歴を merge / push せず、取得し直して個人ファイルだけを戻す。
+GitHub のキャッシュや他人の clone は履歴更新だけで消去を保証できない。
