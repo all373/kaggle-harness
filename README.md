@@ -4,6 +4,11 @@ Kaggle を初めて使う人向けに、VS Code のインストール、開発�
 
 このリポジトリは、複数のコンペのコードをコンペ別のフォルダで管理します。最初の実例は、映画レビューの肯定・否定を予測する [Bag of Words Meets Bags of Popcorn](https://www.kaggle.com/competitions/word2vec-nlp-tutorial/overview) です。
 
+**Git で共有する `competitions/` の中身は `_template/` のみです。**
+各自のコンペ実装・設定・記録はローカルに保持し、GitHub には追加しません。
+以下の既存 NLP / ARC の手順はその実装が手元にある場合の例です。
+新しく clone した人は、環境構築・認証設定後に [新しいコンペの手順](docs/new-competition.md) で自分の実装を作成してください。
+
 **基本ルートは、手元の CPU コンテナでコードを編集し、Kaggle Notebook の GPU で学習する方法です。手元の NVIDIA GPU は不要です。** 手元の GPU でも学習したい人向けの手順は後半にあります。
 
 ## 全体の流れと必要なもの
@@ -389,7 +394,7 @@ Kaggle と GitHub のユーザー名は別のものです。clone 済みなの�
 ```bash
 git check-ignore config/kaggle.local.json
 git status --short
-git add README.md competitions/word2vec-nlp-tutorial
+git add README.md
 git diff --cached --stat
 git diff --cached
 ```

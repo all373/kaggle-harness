@@ -204,9 +204,14 @@ python scripts/kaggle_cli.py competitions submissions "$COMPETITION"
 採点待ちなら提出一覧を再確認し、COMPLETE とスコアを確認します。
 検証スコアと public score の違いを確認し、次の改善は検証スコアも使って判断します。
 
-## 8. 記録して GitHub で共有する
+## 8. 個人の記録と共通機能の共有
 
 `competitions/<slug>/RESULTS.md` を作り、次を記録します。
+
+このコンペフォルダは個人のローカル作業として Git 除外です。
+GitHub で共有するコンペフォルダは `_template/` だけです。
+実装・設定・実測結果のバックアップは別途自分で管理してください。
+このリポジトリへ `git add -f` で追加しないでください。
 
 - 実験名、実行コマンド、コードの commit / ハッシュ、設定、依存関係
 - 検証分割・seed・検証スコア
@@ -216,15 +221,16 @@ python scripts/kaggle_cli.py competitions submissions "$COMPETITION"
 ```bash
 git status --short
 git diff --check
-git add "competitions/$COMPETITION"
+# 共通機能や手順を変更した場合だけ、そのファイルを選択する例
+git add docs/new-competition.md
 git diff --cached --stat
-git commit -m "Add competition implementation and experiment notes"
+git commit -m "Update shared competition workflow documentation"
 git push
 ```
 
-ステージした内容を確認してからコミットします。認証情報・データ・成果物は Git 除外です。
-共通コードや手順も変更した場合は、そのファイルも選んで追加してください。
-他の人は同じコードを取得し、自分の認証とデータを設定して再現します。
+ステージした内容を確認してからコミットします。個別コンペ・認証情報・データ・成果物は Git 除外です。
+共通コードやテンプレートを変更した場合は、そのファイルを選んで追加してください。
+他の人は共通環境とテンプレートを取得し、自分の認証・データ・実装を用意します。
 
 CLI 引数はこの環境に導入済みの `--help` で確認しています。
 別環境で挙動が変わる場合は `python scripts/kaggle_cli.py <サブコマンド> --help` と

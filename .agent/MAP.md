@@ -91,7 +91,8 @@ src/solver.py
 共通入口は `run(config, data_dir, output_dir) -> dict` を呼ぶ。
 ローカル結果は `runs/<slug>/experiments/<name>/<日時と識別子>/experiment.json` に記録し、
 既存結果は上書きしない。選択設定とソースハッシュを保存するが、ソース全文はバックアップしない。
-実装は Git で保存する。config 内の `output_dir` より渡された保存先を優先する。
+個別コンペの実装は Git 除外で、利用者が別途バックアップする。
+config 内の `output_dir` より渡された保存先を優先する。
 NLP / ARC は `src/experiment.py` から既存ベースラインを呼ぶ adapter を用意済み。
 
 共通 Notebook は対象 `src/` と `harness/` の Python ソースだけを同梱する。

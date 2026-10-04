@@ -26,5 +26,8 @@ checkpoints/
 **/kaggle.json
 **/access_token
 /config/*.local.json
+# Competition work is private; share only the reusable template.
+/competitions/*
+!/competitions/_template/
 .aws/
 .ssh/
