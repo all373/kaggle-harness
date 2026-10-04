@@ -4,12 +4,19 @@
     "dockerfile": "Dockerfile",
     "context": "../.."
   },
-  "runArgs": ["--gpus", "all"],
+  "runArgs": [
+    "--gpus",
+    "all"
+  ],
   "remoteUser": "root",
   "updateRemoteUserUID": false,
   "customizations": {
     "vscode": {
-      "extensions": ["ms-python.python", "ms-python.vscode-pylance"]
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "openai.chatgpt"
+      ]
     }
   }
 }
