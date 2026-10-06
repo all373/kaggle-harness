@@ -30,6 +30,12 @@ def main() -> int:
     # Keep conflicting legacy credentials out of this CLI invocation.
     env.pop("KAGGLE_USERNAME", None)
     env.pop("KAGGLE_KEY", None)
+    if sys.argv[1:] == ['gpu', 'quota']:
+        # Keep SDK authentication in a child, just like the regular CLI path.
+        return subprocess.call([sys.executable, str(Path(__file__).with_name('kaggle_gpu_quota.py'))], env=env)
+    if sys.argv[1:3] == ['competitions', 'submission-detail']:
+        return subprocess.call([sys.executable, str(Path(__file__).with_name('kaggle_submission_details.py')),
+                                *sys.argv[3:]], env=env)
     return subprocess.call([executable, *sys.argv[1:]], env=env)
 
 
