@@ -12,6 +12,9 @@ data/
 artifacts/
 runs/
 checkpoints/
+# Keep model weights and their private metadata local; share only the guide.
+/models/*
+!/models/README.md
 *.ckpt
 *.pt
 *.pth

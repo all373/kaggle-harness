@@ -6,6 +6,8 @@
 - `configs/`: 自分の実験ごとの JSON 設定
 - `requirements.txt`: コンペ固有の依存関係
 - `src/`: 学習・前処理・検証コード
+- `src/models/`: モデル定義の Python コード
+- `models/`: このコンペで使う重み・関連ファイル
 - `src/experiment.py`: `run(config, data_dir, output_dir)` の雛形。処理は自分で実装する
 - `notebooks/`: 探索用 Notebook
 
@@ -43,3 +45,5 @@ PyTorch を使う場合は `harness.device.resolve_device(config["device"])` で
 [新しいコンペの手順](../../docs/new-competition.md)、
 実装の契約と既存ベースラインからの変更方法は
 [自分の実装を試す](../../docs/experiments.md) を参照する。
+モデル定義・コンペ用モデル・直下の保管庫の使い分けは
+[モデルの管理手順](../../docs/models.md) を参照する。
