@@ -18,12 +18,17 @@ CPU / GPU の開発環境と、Kaggle Notebook の実行・提出を再現でき
 ## 変更する場所
 
 - コンペ固有の学習・推論は `competitions/<slug>/src/` に置く。
+- モデル定義はコンペの `src/models/`、コンペで使う重みは同コンペの `models/`。
+  直下の `models/pretrained/` / `models/trained/` は重みの保管庫で、README 以外は Git 除外。
+  既存の `runs/` の成果物は保持し、利用者のモデルを勝手に移動・アップロードしない。
 - 共通の処理は `harness/`、実行・取得の入口は `scripts/`。
 - 自分の実装・新コンペの入口は `run_experiment.py` と `prepare_experiment_notebook.py`。
   `src/` 内の `run(config, data_dir, output_dir)` とコンペ内の JSON 設定を選択する。
   手順は `docs/experiments.md` と `docs/new-competition.md`。比較用のベースラインを保持する。
-- NLP の学習 Notebook は `src/train.py` と `config.json` から生成する。
-  ARC の Notebook は `src/solver.py` から生成する。生成物だけを編集しない。
+- NLP の `train.py` と ARC の `solver.py` は薄い互換入口。
+  コンペの pipeline・data / validation・models に役割を分ける。
+  Notebook は対象 src と harness 全体を同梱する。生成物だけを編集しない。
+- モデル・解法の選択は `model` / `solver` 設定。詳細は `docs/components.md`。
 - `run_kaggle_training.py` は現在 NLP コンペ向け。ARC には
   `run_arc_submission.py` を使う。コンペ slug を置き換えるだけで汎用化できるとは扱わない。
 - 既存コンペのコード・ローカル成果物・ユーザーの未コミット変更を保持する。

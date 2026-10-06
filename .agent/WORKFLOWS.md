@@ -30,6 +30,9 @@ python -m unittest discover -s tests -p test_arc_solver.py -v
 # 自作 entry・設定・相対 import・成果物分離・Notebook 同梱
 python -m unittest discover -s tests -p test_experiments.py -v
 
+# 公開 Notebook の自動選択・取得物の分離・自分の非公開 ID への変更
+python -m unittest discover -s tests -p test_baseline_import.py -v
+
 # 共通変更で両方に影響する場合
 python -m unittest discover -s tests -v
 
@@ -42,17 +45,30 @@ CPU 開発環境で Kaggle に送るだけなら、ローカルに PyTorch を�
 
 ## 自分の実装の実行・Notebook 生成
 
-利用者向けの詳細は [docs/experiments.md](../docs/experiments.md) と
-[docs/new-competition.md](../docs/new-competition.md)。ベースラインを保持し、
-`src/my_model.py` と `configs/my-model.json` を作成してから実行する。
+公開 Notebook から始める場合は次を使う。コンペフォルダがあることが前提。
+既存コピーは上書きしない。取得元は origin.json に保存し、コードを実行しない。
 
 ```bash
-python scripts/run_experiment.py word2vec-nlp-tutorial --entry src/my_model.py --config configs/my-model.json --name my-model --device cpu
-python scripts/prepare_experiment_notebook.py word2vec-nlp-tutorial --owner "$KAGGLE_OWNER" --entry src/my_model.py --config configs/my-model.json --name my-model --device cuda --submission-file submission.csv
+python scripts/import_kaggle_baseline.py "$COMPETITION" --owner "$KAGGLE_OWNER" --name "$EXPERIMENT" --device cpu
+```
+
+Titanic は確認済みの tutorial を選び、他は Code 検索候補の入力と提出記述を検査する。
+自動選択できない場合は `--kernel "作者/Notebook名"` を指定する。
+入力・依存関係・提出形式の確認後、利用者向け new-competition.md の A ルートで進める。
+コマンド順の短い案内は [docs/competition-commands.md](../docs/competition-commands.md)。
+状態確認では push 済み metadata の id を使い、実験名・ユーザー名の不一致を避ける。
+
+利用者向けの詳細は [docs/experiments.md](../docs/experiments.md) と
+[docs/new-competition.md](../docs/new-competition.md)。ベースラインを保持し、
+`src/models/` にモデルを追加し、`configs/my-model.json` で model を選んで実行する。
+
+```bash
+python scripts/run_experiment.py word2vec-nlp-tutorial --entry src/experiment.py --config configs/my-model.json --name my-model --device cpu
+python scripts/prepare_experiment_notebook.py word2vec-nlp-tutorial --owner "$KAGGLE_OWNER" --entry src/experiment.py --config configs/my-model.json --name my-model --device cuda --submission-file submission.csv
 ```
 
 共通 packager はローカル生成だけ。push は外部実行、submit は新しい提出になる。
-既存専用スクリプトは引き続き元のベースライン用に使う。
+既存専用スクリプトも分割後のモジュールと設定を同梱する。別設定・別実験名は共通入口で指定する。
 
 ## Kaggle の状態確認（読み取り）
 
@@ -61,6 +77,8 @@ export KAGGLE_OWNER="your-kaggle-username"
 python scripts/kaggle_cli.py kernels status "$KAGGLE_OWNER/word2vec-nlp-tutorial-gpu-train"
 python scripts/kaggle_cli.py competitions submissions word2vec-nlp-tutorial
 python scripts/kaggle_cli.py competitions submissions arc-prize-2026-arc-agi-2
+# 採点エラーの詳細（SUBMISSION_IDを実際の提出IDに置き換える）
+python scripts/kaggle_cli.py competitions submission-detail SUBMISSION_ID
 ```
 
 ## NLP の生成・実行・取得
@@ -109,6 +127,8 @@ Code Competition のため、Notebook version と出力ファイル名を指定�
 実行 / 提出スクリプトは待ち時間を超えると未確定のまま終了する場合がある。
 `PENDING` を成功や0点に読み替えず、実際の `COMPLETE` とスコアを記録する。
 API の提出回数・GPU 枠は現在のアカウントで確認し、過去の残数を再利用しない。
+提出一覧が COMPLETE でも詳細の error_description が非空なら採点失敗。
+CLI の送信成功、可視データの Notebook 完了、隠しデータでの採点成功を区別する。
 
 ## 更新する記録
 

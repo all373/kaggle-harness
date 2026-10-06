@@ -3,36 +3,23 @@
 既存のベースラインを残し、別ファイルと別設定で試せます。共通の実行入口は
 `scripts/run_experiment.py`、Kaggle Notebook の生成は `scripts/prepare_experiment_notebook.py` です。
 このページのコマンドはローカル実行・Notebook 生成までです。
+NLP のモデル変更を順に試す場合は [初心者向け NLP ガイド](nlp-model-change.md) を参照してください。
 外部実行と提出は [新しいコンペの手順](new-competition.md#6-kaggle-notebook-で実行する) を参照してください。
 
-## 1. NLP の実装をコピーして変更する
+## 1. NLP のモデルを設定から選ぶ
 
-データ取得と依存関係の導入は [NLP README](../competitions/word2vec-nlp-tutorial/README.md) を先に実施します。
-CPU コンテナでローカル学習する場合は PyTorch の導入も必要です。
-
-以下のコピーは初回だけ行います。すでに編集したファイルに再実行すると上書きされます。
-
-```bash
-mkdir -p competitions/word2vec-nlp-tutorial/configs
-cp competitions/word2vec-nlp-tutorial/src/train.py competitions/word2vec-nlp-tutorial/src/my_model.py
-cp competitions/word2vec-nlp-tutorial/config.json competitions/word2vec-nlp-tutorial/configs/my-model.json
-```
-
-`src/my_model.py` のモデル・前処理や `configs/my-model.json` の epoch・学習率を編集します。
-元の `src/train.py` と `config.json` は比較用に残します。
+詳しい手順は [初心者向け NLP ガイド](nlp-model-change.md) を参照します。
+`train.py` は薄い入口になり、学習・推論の実装は `src/models/` に分離されています。
+設定の `model` に `embedding_bag_mlp` / `tfidf_logistic`、または
+`models.my_model:MyEstimator` を指定します。
+自作モデルは `fit()` と `predict()` を実装すれば、同じ読み込み・分割・検証・提出処理を使えます。
 
 ```bash
-# 元のベースラインを共通入口で実行
-python scripts/run_experiment.py word2vec-nlp-tutorial --name baseline --device cpu
-
-# 自分の実装・設定を実行
-python scripts/run_experiment.py word2vec-nlp-tutorial --entry src/my_model.py --config configs/my-model.json --name my-model --device cpu
+# configs/my-model.json をコピー・編集してから実行
+python scripts/run_experiment.py word2vec-nlp-tutorial --config configs/my-model.json --name my-model --device cpu
 ```
 
-GPU コンテナで実行するときは `--device cuda` に変えます。
-CPU / GPU 比較では同じ seed・検証分割・指標を使います。
-デバイス指定は設定値として実装に渡すため、自分のコードでもその値を反映してください。
-PyTorch なら `harness.device.resolve_device(config["device"])` を使えます。
+前処理が変わる方式は自作 estimator 内にまとめ、入出力の境界を生レビューと予測確率に保ちます。
 
 ## 2. 実験結果を見る
 
@@ -52,6 +39,8 @@ runs/word2vec-nlp-tutorial/experiments/
 SHA-256 を記録します。それ以外の成果物は各実装が保存します。
 共通入口は config 内の `output_dir` よりも上の実験別保存先を優先します。
 学習コードでは渡された `output_dir` に保存してください。
+採用した重みをコンペ内の `models/` や直下の保管庫に保存する方法は
+[モデルの管理手順](models.md) を参照してください。
 
 ソースはハッシュを記録し、全文のバックアップは作りません。
 個別コンペはこのリポジトリの Git 管理から除外されます。
@@ -89,13 +78,13 @@ NaN / Infinity の指標は実験記録として保存できません。
 
 ```bash
 export KAGGLE_OWNER="your-kaggle-username"
-python scripts/prepare_experiment_notebook.py word2vec-nlp-tutorial --owner "$KAGGLE_OWNER" --entry src/my_model.py --config configs/my-model.json --name my-model --device cuda --submission-file submission.csv
+python scripts/prepare_experiment_notebook.py word2vec-nlp-tutorial --owner "$KAGGLE_OWNER" --entry src/experiment.py --config configs/my-model.json --name my-model --device cuda --submission-file submission.csv
 ```
 
 このコマンドはローカルで `runs/word2vec-nlp-tutorial/notebooks/my-model/` に
 Notebook と metadata を生成します。まだ GPU 実行も提出も行いません。
 実行方法・依存関係・Notebook バージョンの扱いは [新しいコンペの手順](new-competition.md) を参照してください。
-既存の `run_kaggle_training.py` は元の NLP ベースライン用なので、自分の `--entry` には共通生成スクリプトを使います。
+専用の生成スクリプトも分割モジュールを同梱します。別設定・別実験名は共通生成スクリプトで指定できます。
 
 ## 5. ARC の別実装を試す
 
@@ -111,6 +100,7 @@ python scripts/run_experiment.py arc-prize-2026-arc-agi-2 --config configs/local
 
 自作 solver は別ファイルに置き、上の `run(config, data_dir, output_dir)` 形式で呼び出します。
 既存 solver の関数は引数が異なるため、`src/experiment.py` の adapter を参考にしてください。
+ARC の `solver` 設定に `symbolic` または `models.my_solver:MySolver` を指定すると、解法だけを選べます。自作解法は `solve(task)` から2候補と規則数を返します。
 現在の規則探索は CPU 用です。`--device cuda` を指定しても GPU モデルにはなりません。
 Kaggle 実行では公開正解を参照しない設定（`validate` を省略するか `false`）を使い、
 採点時に差し替えられる入力から予測します。

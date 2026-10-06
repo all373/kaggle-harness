@@ -4,6 +4,8 @@ VS Code・WSL・Dev Container・Kaggle 認証は [ルート README](../README.md
 ここからは **コンテナ内ターミナル、リポジトリルート** で作業します。
 例では `titanic` を使います。自分のコンペでは URL の `/competitions/` に続く名前に置き換えます。
 既存の NLP / ARC の再現には、それぞれのコンペ README を使ってください。
+実行する Python の役割と入出力は [Python の実行順と入出力](competition-python-flow.md) で説明しています。
+公開ベースラインから始める場合の実行コマンドだけを追うには [コマンド集](competition-commands.md) を使ってください。
 
 ## 1. 参加条件と提出方式を確認する
 
@@ -14,12 +16,13 @@ Code Competition では Notebook を再実行して採点するため、オフ�
 
 ```bash
 export COMPETITION="titanic"
-export EXPERIMENT="my-model"
+export EXPERIMENT="baseline"
 export KAGGLE_OWNER="your-kaggle-username"
 ```
 
 `KAGGLE_OWNER` は Kaggle のプロフィール URL のユーザー名です。トークンは書きません。
 この3変数は新しいターミナルで再設定します。実験名は英小文字・数字・ハイフンで決めます。
+公開 Notebook の例では `baseline`、自作 Python の例では手順4の B で `my-model` に変更します。
 
 ## 2. コンペ用フォルダを作る
 
@@ -35,6 +38,8 @@ competitions/titanic/
   requirements.txt
   src/__init__.py
   src/experiment.py
+  src/models/__init__.py
+  models/README.md
   notebooks/
 ```
 
@@ -60,11 +65,70 @@ ZIP 名は実際にダウンロードされたものに合わせます。ZIP 以
 Kaggle Notebook では入力の基点が `/kaggle/input` に変わります。
 実装では渡された `data_dir` の下からファイルを探し、Windows の絶対パスを埋め込まないでください。
 
-## 4. 自分の設定と実装を作る
+## 4. 公開ベースラインを取り込む、または自分で実装する
 
-初回だけ設定をコピーします。
+初めてなら **A：Kaggle の公開 Notebook を取り込む** から始められます。
+このルートでは `src/my_model.py` や `run()` の実装は不要です。
+Python の共通入口を使って自作する場合は B を選びます。
+
+### A：Kaggle Code のベースラインを使う
+
+最初に設定した `$COMPETITION` から公開 Notebook を自動選択して取り込みます。
+Notebook の URL を探したり、Python ファイルを自作したりする必要はありません。
 
 ```bash
+python scripts/import_kaggle_baseline.py "$COMPETITION" --owner "$KAGGLE_OWNER" --name "$EXPERIMENT" --device cpu
+```
+
+Titanic では取得を確認した [Titanic Tutorial](https://www.kaggle.com/code/alexisbcook/titanic-tutorial)
+を選びます。他のコンペでは Code の人気順20件から、タイトルに baseline / starter / tutorial / submission /
+benchmark を含む候補を最大5件取得し、対象コンペの入力と `submission` の記述があるものを選びます。
+これは候補の絞り込みです。実行成功や検証スコアの計算、提出形式の正しさまでは保証しません。
+開いて評価方法・必要な入力・ライブラリ・ライセンスを確認してください。
+
+自動選択できない場合や別の Notebook を使いたい場合は、コンペ画面の **Code** で
+予測・提出ファイルまで作る Python Notebook を選び、`--kernel` を追加します。
+
+```bash
+python scripts/import_kaggle_baseline.py "$COMPETITION" --kernel "https://www.kaggle.com/code/作者/Notebook名" --owner "$KAGGLE_OWNER" --name "$EXPERIMENT" --device cpu
+```
+
+`作者/Notebook名` や `作者/Notebook名/バージョン番号` も指定できます。
+バージョンを省略すると取得時の最新版です。GPU が必要なコードでは `--device cuda` を指定します。
+
+このコマンドはダウンロードとローカル準備だけで、コードの実行・提出は行いません。
+
+```text
+competitions/<slug>/notebooks/
+  imports/<実験名>/<取得ID>/     # 元の Notebook と metadata
+  baselines/<実験名>/
+    baseline.ipynb             # 自分で編集するコピー。保存出力を消去済み
+    kernel-metadata.json       # 自分の ID、非公開、CPU / GPU の設定
+    origin.json                # 取得元・日時・元コードのハッシュ
+runs/<slug>/notebooks/<実験名>/  # アップロード用の Notebook と metadata
+```
+
+取得元の Notebook ID / 数値 ID は自分のアップロード設定に引き継ぎません。
+元の Dataset / Model / Notebook 入力は引き継ぎ、コンペ入力を選択したコンペに設定します。
+このコンペで使える入力か、Notebook のパスと一致するかを確認します。
+同じ実験名のコピーがあると上書きを拒否するので、別名を選ぶか既存コピーを使います。
+取得物はコンペ内と runs 内に保存され、Git 除外です。元の作者の表記は残します。
+コード中の通常の文字列で書かれた `/kaggle/input/<slug>/...` と
+`/kaggle/input/competitions/<slug>/...` は、実際に存在する入力を探す処理に変更します。
+元の Notebook は imports 内に保持します。f-string や独自のパス組み立ては手動で確認してください。
+
+`competitions/<slug>/notebooks/baselines/<実験名>/baseline.ipynb` を開き、
+入力パス・学習処理・提出ファイルの名前を確認します。ここでは `submission.csv` が
+`/kaggle/working` に出力される Notebook を想定します。
+自分の変更はこの Notebook に加えてから **手順6の A** へ進みます。
+このルートの指標と成果物は元の Notebook の実装に従い、共通入口の `experiment.json` は作りません。
+
+### B：自分の Python を実装する
+
+自作実験の名前を設定し、初回だけ設定をコピーします。
+
+```bash
+export EXPERIMENT="my-model"
 cp "competitions/$COMPETITION/config.json" "competitions/$COMPETITION/configs/$EXPERIMENT.json"
 python -m pip install -r "competitions/$COMPETITION/requirements.txt"
 ```
@@ -74,10 +138,15 @@ python -m pip install -r "competitions/$COMPETITION/requirements.txt"
 `configs/my-model.json` に seed、分割比率、モデルのパラメーターなどを追加します。
 設定には認証情報を書きません。選択した設定は Kaggle Notebook に埋め込まれます。
 
+モデル定義は `src/models/`、このコンペで使う重みは `models/` に置けます。
+コンペ横断の保管庫はリポジトリ直下の `models/` です。
+配置と読み込み方法は [モデルの管理手順](models.md) を参照してください。
+
 `src/experiment.py` を編集するか、自分の `src/my_model.py` を作ります。
 必須の入口は `run(config, data_dir, output_dir)` です。
 関数の形・実験ファイルの分け方は [自分の実装を試す](experiments.md#3-実装の共通入口) を参照してください。
-既存 NLP にはそのままコピーして変更できる学習コードがあります。
+手元の NLP にはモデルを設定で差し替えられる実装があります。
+ただし、新コンペの雛形に学習モデルが自動で入るわけではありません。
 
 実装する処理は次の順序です。
 
@@ -94,11 +163,12 @@ python -m pip install -r "competitions/$COMPETITION/requirements.txt"
 
 ## 5. ローカルで学習・検証する
 
-`src/my_model.py` を作成した場合のコマンドです。雛形を直接編集した場合は
-`--entry src/experiment.py` にします。
+手順4の A を選んだ場合は手順6へ進みます。
+B では、雛形の `src/experiment.py` を実装してから実行します。
+別途 `src/my_model.py` を作った場合だけ `--entry` をそのファイルに変更してください。
 
 ```bash
-python scripts/run_experiment.py "$COMPETITION" --entry src/my_model.py --config "configs/$EXPERIMENT.json" --name "$EXPERIMENT" --device cpu
+python scripts/run_experiment.py "$COMPETITION" --entry src/experiment.py --config "configs/$EXPERIMENT.json" --name "$EXPERIMENT" --device cpu
 ```
 
 ローカル NVIDIA GPU で学習する場合は GPU Dev Container を使い、`--device cuda` に変えます。
@@ -113,10 +183,38 @@ GPU を Kaggle 側だけで使う場合、ローカルの本学習を省略し�
 
 ## 6. Kaggle Notebook で実行する
 
-実装が `output_dir/submission.csv` を生成する場合の例です。
+### A：取り込んだ Notebook を使う
+
+`import_kaggle_baseline.py` がアップロード用ファイルを用意済みなので、
+`prepare_experiment_notebook.py` は使いません。
+`EXPERIMENT` は取得時の `--name` と同じ値にしてください。取得済みの名前は次で確認できます。
 
 ```bash
-python scripts/prepare_experiment_notebook.py "$COMPETITION" --owner "$KAGGLE_OWNER" --entry src/my_model.py --config "configs/$EXPERIMENT.json" --name "$EXPERIMENT" --device cpu --submission-file submission.csv
+ls "competitions/$COMPETITION/notebooks/baselines"
+```
+
+取得済みの Titanic のコピーが `baseline` なら `export EXPERIMENT="baseline"` に設定します。
+`cannot stat .../my-model/...` が出た場合も、表示されたフォルダ名に合わせてから再実行してください。
+編集したコピーをアップロード用フォルダへ反映します。
+
+```bash
+cp "competitions/$COMPETITION/notebooks/baselines/$EXPERIMENT/baseline.ipynb" "runs/$COMPETITION/notebooks/$EXPERIMENT/baseline.ipynb"
+cp "competitions/$COMPETITION/notebooks/baselines/$EXPERIMENT/kernel-metadata.json" "runs/$COMPETITION/notebooks/$EXPERIMENT/kernel-metadata.json"
+```
+
+metadata は非公開・インターネット無効で準備します。
+元の Notebook がダウンロードや pip install を必要とする場合は、オフラインで動くように
+入力を準備するか、規約が許す場合に metadata の `enable_internet` を変更します。
+GPU の必要性や出力ファイル名も元のコードに合わせます。
+準備したら、以下の共通の push / status コマンドへ進みます。
+
+### B：自作 Python から Notebook を生成する
+
+実装が `output_dir/submission.csv` を生成する場合の例です。
+`src/experiment.py` の `run()` を実装済みであることが前提です。
+
+```bash
+python scripts/prepare_experiment_notebook.py "$COMPETITION" --owner "$KAGGLE_OWNER" --entry src/experiment.py --config "configs/$EXPERIMENT.json" --name "$EXPERIMENT" --device cpu --submission-file submission.csv
 ```
 
 GPU 学習なら `--device cuda` に変えます。生成段階では API を呼びません。
@@ -142,7 +240,9 @@ Notebook にインストール処理を追加します。再生成で手編集�
 入出力パスをローカル用に調整して読み込みや import を確認できます。
 Kaggle GPU の利用条件・残り枠は本人のアカウント画面で確認します。
 
-準備できたらアップロードして実行します。
+### 共通：アップロード・実行・取得
+
+A または B の準備ができたらアップロードして実行します。
 
 ```bash
 python scripts/kaggle_cli.py kernels push -p "runs/$COMPETITION/notebooks/$EXPERIMENT" --timeout 3600
@@ -163,6 +263,7 @@ python scripts/kaggle_cli.py kernels output "$KAGGLE_OWNER/$COMPETITION-$EXPERIM
 ```
 
 `--submission-file submission.csv` は生成されたファイルを `/kaggle/working/submission.csv` にもコピーします。
+これは B の生成機能です。A では元の Notebook 自身が提出ファイルをこの場所に保存します。
 取得先にある `submission.csv` と実験フォルダ内の指標を確認します。
 ファイルが作られていない場合、Notebook は失敗します。名前は実装と揃えてください。
 

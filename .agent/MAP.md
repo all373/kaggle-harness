@@ -10,10 +10,16 @@
 | `config/kaggle.local.json` | 各自の認証情報。Git 除外、内容を表示しない |
 | `requirements-kaggle.txt` | 共通 CLI の依存指定 |
 | `data/<slug>/` | 配布データ。Git 除外 |
+| `models/` | 事前学習 / 選んだ学習済みモデルの保管庫。README 以外は Git 除外 |
+| `competitions/<slug>/models/` | コンペで使用する重み・前処理資産。コンペ全体が Git 除外 |
+| `competitions/<slug>/src/models/` | コンペ固有のモデル定義。共通 Notebook が Python ソースを同梱 |
 | `runs/<slug>/` | 生成 metadata・モデル・予測・ログ・スコア。Git 除外 |
 | `competitions/_template/` | コンペの雛形。`src/experiment.py` の関数契約を用意し、学習処理は未実装 |
 | `harness/device.py` | `auto` / `cpu` / `cuda` のデバイス選択ユーティリティ |
 | `harness/experiments.py` | 選択した実装の実行、実験別保存先、設定・指標・ソースハッシュの記録 |
+| `harness/artifacts.py` | 入力検索、表読み込み、CSV / JSON 保存、ソース指紋 |
+| `harness/components.py` | コンペ内の `module:class` を設定から読み込み、関数契約を検査 |
+| `harness/notebooks.py` | 専用 / 共通 Notebook で共有する複数モジュールの同梱処理 |
 | `docs/` | 自分の実装と新コンペ追加・提出の利用者向け手順 |
 
 ホストは Windows + WSL + WSL containers を想定。WSL 本体のリリース番号と
@@ -27,7 +33,9 @@ Kaggle は独自の Python / ライブラリ環境で実行し、ローカル Do
 | --- | --- |
 | `scripts/check_env.py` | ローカル環境と任意の CUDA 演算確認 |
 | `scripts/new_competition.py` | テンプレートを新規 slug にコピー。既存フォルダは拒否 |
+| `scripts/import_kaggle_baseline.py` | コンペ名から公開 Python Notebook を選択・取得。編集用と非公開アップロード用をローカル準備。実行・提出はしない |
 | `scripts/kaggle_cli.py` | ローカルトークンを子プロセスの環境変数で CLI に渡す |
+| `scripts/kaggle_submission_details.py` | CLI wrapper 経由で指定提出の採点エラーを取得。送信・再実行はしない |
 | `scripts/kaggle_helpers.py` | 専用実行スクリプトで共有する CLI 呼び出し。ARC から NLP への依存を除去 |
 | `scripts/run_experiment.py` | `--entry` / `--config` / `--name` で自分の実装をローカル実行 |
 | `scripts/prepare_experiment_notebook.py` | 同じ実装・相対 import の補助ファイルを非公開 CPU / GPU Notebook に同梱。ローカル生成のみ |
@@ -39,7 +47,8 @@ Kaggle は独自の Python / ライブラリ環境で実行し、ローカル Do
 
 ## NLP：word2vec-nlp-tutorial
 
-ソース: `competitions/word2vec-nlp-tutorial/src/train.py`。
+入口: `competitions/word2vec-nlp-tutorial/src/train.py`。本体は `src/pipeline.py`、
+入力と分割は `src/data.py`、方式固有の処理は `src/models/`。
 設定: 同コンペの `config.json`。データ展開: `src/prepare_data.py`。
 
 PyTorch EmbeddingBag + MLP。事前学習 Word2Vec は使用しない。
@@ -79,9 +88,10 @@ src/solver.py
   → 任意の Notebook version を固定した Code Competition 提出
 ```
 
-専用 solver / packager は ARC の `config.json` を読み込まない。
-共通入口の `src/experiment.py` adapter は config の `validate`（既定 false）を読む。
-規則を変えるなら solver を編集するか別実装を選ぶ。Kaggle Notebook は `validate=False` で動かす。
+ARC の `solver.py` は互換入口で、規則は `src/models/symbolic.py` に分離。
+専用 packager も config を読み、`solver` 設定で解法を選ぶ。
+共通入口の adapter は config の `validate`（既定 false）を読む。
+Kaggle Notebook は `validate=False` で動かす。
 公開正解を読むのはローカルの `--validate` による評価だけ。
 採点時の test challenges は Kaggle が差し替えるため、配布データの ID / 件数を
 コードに固定してはいけない。`--resume-version` は指定 version の成果物を取得する。

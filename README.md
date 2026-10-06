@@ -7,7 +7,7 @@ Kaggle を初めて使う人向けに、VS Code のインストール、開発�
 **Git で共有する `competitions/` の中身は `_template/` のみです。**
 各自のコンペ実装・設定・記録はローカルに保持し、GitHub には追加しません。
 以下の既存 NLP / ARC の手順はその実装が手元にある場合の例です。
-新しく clone した人は、環境構築・認証設定後に [新しいコンペの手順](docs/new-competition.md) で自分の実装を作成してください。
+新しく clone した人は、環境構築・認証設定後に [新しいコンペの手順](docs/new-competition.md) で公開 Notebook の取り込み、または自分の実装から始めてください。
 
 **基本ルートは、手元の CPU コンテナでコードを編集し、Kaggle Notebook の GPU で学習する方法です。手元の NVIDIA GPU は不要です。** 手元の GPU でも学習したい人向けの手順は後半にあります。
 
@@ -329,6 +329,12 @@ python scripts/kaggle_cli.py competitions submissions word2vec-nlp-tutorial
 
 採点が遅い場合は結果が pending のまま終了することがあります。再提出せず、上の提出一覧で確認してください。提出処理は自動で再試行しません。通信が切れた場合も、先に提出済みかを確認します。
 
+提出一覧が `COMPLETE` でもスコアが空の場合は、詳細のエラーも確認します。
+`SUBMISSION_ID` を提出一覧の `ref` に置き換え、
+`python scripts/kaggle_cli.py competitions submission-detail SUBMISSION_ID` を実行してください。
+`scoring_failed=true` または `error_description` が非空なら採点失敗です。
+送信が受理されたことと、隠しデータでの採点が成功したことは別です。
+
 ### 2回目以降、学習から提出までまとめて実行する場合
 
 設定を変更して学習と提出をまとめて行いたい場合は次を使います。
@@ -358,7 +364,9 @@ python scripts/run_kaggle_training.py word2vec-nlp-tutorial --owner "$KAGGLE_OWN
 
 ## 14. コードを変更して次の実験をする
 
-学習設定は `competitions/word2vec-nlp-tutorial/config.json`、モデルと前処理は `competitions/word2vec-nlp-tutorial/src/train.py` を編集します。
+学習設定は `competitions/word2vec-nlp-tutorial/config.json`、モデル固有の処理は同コンペの `src/models/` にあります。
+設定の `model` で既存の EmbeddingBag / CPU の TF-IDF、または自作クラスを選べます。
+`train.py` は実行入口です。変更方法は [初心者向け NLP ガイド](docs/nlp-model-change.md) を参照してください。
 
 最初は epoch 数・学習率などを1つずつ変え、検証スコアを比較してください。ブラウザで Notebook を変更した場合はリポジトリ側にも反映します。通常はリポジトリを編集して Notebook を再生成する方が変更を管理しやすくなります。
 
@@ -454,7 +462,18 @@ python scripts/new_competition.py titanic
 
 `competitions/titanic/` に設定・README・コード用フォルダを作ります。既存フォルダは上書きしません。
 
-**テンプレート作成だけでは学習・提出は動きません。** 新しいコンペでは、自分でデータの読み込み・モデル・検証・提出形式を実装してください。上の GPU 学習コマンドは `word2vec-nlp-tutorial` 用です。
+**テンプレート作成だけでは学習・提出は動きません。** 公開 Notebook を取り込むか、自分でデータの読み込み・モデル・検証・提出形式を実装します。上の GPU 学習コマンドは `word2vec-nlp-tutorial` 用です。
+
+公開ベースラインから始める場合は、コンペ名だけで Notebook を選択・取得できます。
+`KAGGLE_OWNER` は自分の Kaggle ユーザー名に設定してください。
+
+```bash
+python scripts/import_kaggle_baseline.py titanic --owner "$KAGGLE_OWNER" --name baseline --device cpu
+```
+
+編集用コピーは `competitions/titanic/notebooks/baselines/baseline/` に保存します。
+学習・提出は別の手順です。[新しいコンペの手順・A](docs/new-competition.md#4-公開ベースラインを取り込むまたは自分で実装する) から続けられます。
+取得・実行・提出をコマンド順に進める場合は [コマンド集](docs/competition-commands.md) を使ってください。
 
 自分の実装は `src/`、設定のバリエーションは `configs/` に置き、共通入口から選択して実行できます。
 `run(config, data_dir, output_dir)` を実装すると、ローカル実行と Kaggle Notebook 生成の両方で使えます。
@@ -494,6 +513,9 @@ config/
   kaggle.example.json          # 共有する設定例
   kaggle.local.json            # 各自のトークン（Git 除外）
 harness/                       # コンペ共通のユーティリティ
+models/                        # モデル保管庫（README 以外は Git 除外）
+  pretrained/                  # コンペ横断で使う事前学習モデル
+  trained/                     # 選んだ学習済みモデル
 docs/                          # 自分の実装・新しいコンペの手順
 competitions/
   _template/                   # 新しいコンペ用テンプレート
@@ -504,6 +526,8 @@ competitions/
     configs/                   # 自分の実験ごとの設定（任意に作成）
     requirements.txt           # 依存関係
     src/                       # 学習・前処理コード
+      models/                  # モデル定義の Python コード
+    models/                    # このコンペで使用する重み・設定
     notebooks/                 # GPU 確認・学習 Notebook
 scripts/                       # 認証・Notebook 生成・実行・結果取得
 tests/                         # 学習フローの確認
@@ -511,6 +535,8 @@ data/<コンペ名>/                # ローカルデータ（Git 除外）
 runs/<コンペ名>/                # モデル・スコア・提出物（Git 除外）
 PROGRESS.md                    # 会話がなくても作業を再開するためのメモ
 ```
+
+モデルのコード・コンペ用の重み・保管庫の使い分けは [モデルの管理手順](docs/models.md) を参照してください。
 
 ## 困ったとき
 
