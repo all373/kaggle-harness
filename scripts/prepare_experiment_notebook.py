@@ -8,7 +8,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from harness.experiments import entry_path, load_config, python_sources, validate_slug
+from harness.experiments import entry_path, load_config, validate_slug
+from harness.notebooks import source_loader
 
 
 def prepare(root: Path, slug: str, owner: str, entry: str = "src/experiment.py",
@@ -26,19 +27,9 @@ def prepare(root: Path, slug: str, owner: str, entry: str = "src/experiment.py",
     entry_path(competition, entry)
     config = load_config(competition, config_path)
     config["device"] = device
-    sources = python_sources(root, competition)
-    # Package markers prevent namespace conflicts and support relative imports.
-    sources.setdefault("competitions/__init__.py", "")
-    sources.setdefault(f"competitions/{slug}/__init__.py", "")
-    sources.setdefault(f"competitions/{slug}/src/__init__.py", "")
-    code = (
-        "from pathlib import Path\nimport sys\n"
-        f"SOURCES = {sources!r}\nCONFIG = {config!r}\n"
-        "ROOT = Path('/kaggle/working/workspace')\n"
-        "for relative, text in SOURCES.items():\n"
-        "    path = ROOT / relative\n    path.parent.mkdir(parents=True, exist_ok=True)\n"
-        "    path.write_text(text)\n"
-        "sys.path.insert(0, str(ROOT))\n"
+    module = f"competitions.{slug}." + ".".join(Path(entry).with_suffix("").parts)
+    code = source_loader(root, competition, module) + (
+        f"CONFIG = {config!r}\n"
         "from harness.experiments import execute\n"
         "from datetime import datetime, timezone\n"
         "run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')\n"

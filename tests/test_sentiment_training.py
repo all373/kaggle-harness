@@ -1,21 +1,20 @@
 """Check holdout isolation, checkpoint scoring, and submission ID alignment."""
 
 import csv
-import importlib.util
+import importlib
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from sklearn.metrics import roc_auc_score
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location(
-    "sentiment_training", ROOT / "competitions/word2vec-nlp-tutorial/src/train.py")
-TRAINING = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(TRAINING)
+if not (ROOT / 'competitions/word2vec-nlp-tutorial/src/train.py').is_file():
+    raise unittest.SkipTest("Private competition source is not present in this checkout")
+from sklearn.metrics import roc_auc_score
+TRAINING = importlib.import_module("competitions.word2vec-nlp-tutorial.src.train")
 
 
 class SentimentTrainingTests(unittest.TestCase):
@@ -61,7 +60,8 @@ class SentimentTrainingTests(unittest.TestCase):
                 TRAINING.run(config, data, output)
 
     def test_cuda_required_does_not_silently_fall_back(self):
-        with patch.object(TRAINING.torch.cuda, "is_available", return_value=False):
+        import torch
+        with patch.object(torch.cuda, "is_available", return_value=False):
             with self.assertRaisesRegex(RuntimeError, "CUDA required"):
                 TRAINING.run({"seed": 42, "device": "cuda"}, Path("unused"), Path("unused"))
 

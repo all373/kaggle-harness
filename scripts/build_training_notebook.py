@@ -1,11 +1,15 @@
-"""Build the Kaggle training notebook from version-controlled Python and config."""
+"""Build the Kaggle training notebook from competition Python modules and config."""
 
 import json
 from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from harness.notebooks import source_loader
 
 
 def build(competition: Path) -> Path:
-    source = (competition / "src" / "train.py").read_text()
     config = json.loads((competition / "config.json").read_text())
     config["device"] = "cuda"
     cells = [
@@ -23,14 +27,8 @@ def build(competition: Path) -> Path:
             "print(json.dumps(CONFIG, indent=2))\n",
         ]},
         {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [], "source": [
-            "# Write and import the shared training implementation.\n",
-            f"TRAINING_SOURCE = {source!r}\n",
-            "import importlib.util\n",
-            "module_path = Path('/kaggle/working/train.py')\n",
-            "module_path.write_text(TRAINING_SOURCE)\n",
-            "spec = importlib.util.spec_from_file_location('sentiment_training', module_path)\n",
-            "training = importlib.util.module_from_spec(spec)\n",
-            "spec.loader.exec_module(training)\n",
+            source_loader(competition.parents[1], competition, f"competitions.{competition.name}.src.train"),
+            "training = implementation\n",
         ]},
         {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [], "source": [
             "from datetime import datetime, timezone\n",

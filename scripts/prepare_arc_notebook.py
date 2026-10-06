@@ -4,8 +4,12 @@ import argparse
 import json
 from pathlib import Path
 import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from harness.notebooks import source_loader
+
 COMPETITION = 'arc-prize-2026-arc-agi-2'
 
 
@@ -13,16 +17,11 @@ def prepare(owner):
     if not re.fullmatch(r'[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*', owner):
         raise ValueError('owner must be a Kaggle username')
     competition = ROOT / 'competitions' / COMPETITION
-    source = (competition / 'src/solver.py').read_text()
-    code = (
-        'from pathlib import Path\nimport importlib.util\n'
-        f'SOURCE = {source!r}\n'
-        "path = Path('/kaggle/working/solver.py')\npath.write_text(SOURCE)\n"
-        "spec = importlib.util.spec_from_file_location('arc_solver', path)\n"
-        'solver = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(solver)\n'
-        "# In scoring runs Kaggle replaces the test challenges with hidden tasks.\n"
-        "# Infer from the supplied demonstrations; never read test/evaluation solutions.\n"
-        "metrics = solver.run(Path('/kaggle/input'), Path('/kaggle/working'), validate=False)\n"
+    config = json.loads((competition / 'config.json').read_text())
+    code = source_loader(ROOT, competition, f'competitions.{COMPETITION}.src.solver') + (
+        f'CONFIG = {config!r}\n'
+        "# Scoring replaces input tasks. Evaluation solutions are never read here.\n"
+        "metrics = implementation.run(Path('/kaggle/input'), Path('/kaggle/working'), validate=False, config=CONFIG)\n"
     )
     notebook = {'nbformat': 4, 'nbformat_minor': 4, 'metadata': {
         'kernelspec': {'display_name': 'Python 3', 'language': 'python', 'name': 'python3'}},

@@ -11,6 +11,8 @@ import sys
 import time
 from uuid import uuid4
 
+from harness.artifacts import write_json
+
 
 def validate_slug(value: str) -> str:
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value):
@@ -86,8 +88,8 @@ def execute(root: Path, slug: str, entry: str, config: dict, name: str,
         "data_dir": str(data), "output_dir": str(output),
         "source_sha256": {path: hashlib.sha256(text.encode()).hexdigest() for path, text in sources.items()},
     }
-    serialized = json.dumps(result, indent=2, allow_nan=False)
+    json.dumps(result, allow_nan=False)
     output.mkdir(parents=True, exist_ok=True)
-    (output / "experiment.json").write_text(serialized + "\n")
+    write_json(output / "experiment.json", result)
     print(f"Experiment result: {output / 'experiment.json'}", flush=True)
     return result

@@ -1,15 +1,14 @@
-import importlib.util
+import importlib
 from pathlib import Path
 import unittest
 
-import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location(
-    'arc_solver', ROOT / 'competitions/arc-prize-2026-arc-agi-2/src/solver.py')
-SOLVER = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(SOLVER)
+if not (ROOT / 'competitions/arc-prize-2026-arc-agi-2/src/solver.py').is_file():
+    raise unittest.SkipTest("Private competition source is not present in this checkout")
+import numpy as np
+SOLVER = importlib.import_module("competitions.arc-prize-2026-arc-agi-2.src.solver")
 
 
 class ArcSolverTests(unittest.TestCase):
